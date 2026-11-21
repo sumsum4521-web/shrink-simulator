@@ -571,7 +571,7 @@ function updateNet(dt){
   const pv=vis(sizeOf(n.S)),tm=performance.now()/1000;(n.pets||[]).forEach((q,i)=>{const ang=n.face+Math.PI+(i-1)*0.7,r=3.2*pv;const tx=n.x+Math.sin(ang)*r,tz=n.z+Math.cos(ang)*r;q.x+=(tx-q.x)*Math.min(1,6*dt);q.z+=(tz-q.z)*Math.min(1,6*dt);
    const ps=1.15*pv,fl=q.s.userData.fly||q.s.userData.swim;q.s.visible=n.mesh.visible;q.s.position.set(q.x,n.y+(fl?1.3+Math.sin(tm*3+i)*0.2:Math.abs(Math.sin(tm*(n.amp?9:3)+i))*0.25)*ps,q.z);q.s.scale.setScalar(ps);q.s.rotation.y=n.face;animPet(q.s,tm,i);});}
  bubbleTick(me.mesh);
- if(!ROOM)return;netT-=dt;if(netT>0)return;netT=0.2;
+ if(!ROOM||!P.named)return;netT-=dt;if(netT>0)return;netT=0.2;
  ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0,c:myChat.i>=0?[myChat.i,myChat.k]:null,pe:P.eq.map(id=>{const p=P.pets.find(x=>x.id===id);return p?p.t:null;}).filter(Boolean)}).catch(()=>{});}
 function initNet(){(async()=>{
  // 1) Claude 안에서 열면: Claude 같은 서버 기능
