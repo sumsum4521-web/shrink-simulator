@@ -34,7 +34,11 @@ canvas{display:block}
 .st span{display:block;font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.15}
 .st.c1{background:linear-gradient(#4dabf7,#1c7ed6)}.st.c2{background:linear-gradient(#ffd43b,#f59f00)}.st.c3{background:linear-gradient(#69db7c,#2f9e44)}.st.c4{background:linear-gradient(#b197fc,#7048e8)}
 #auto{position:fixed;right:12px;top:50%;transform:translateY(-50%);width:96px;height:96px;border-radius:20px;border:3px solid #fff;background:linear-gradient(#868e96,#495057);color:#fff;font:900 15px "Noto Sans KR";box-shadow:0 5px 0 rgba(0,0,0,.4);cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-#auto b{font-size:30px;line-height:1}#auto.on{background:linear-gradient(#69db7c,#2b8a3e);animation:glow2 1s infinite alternate}
+#auto b{font-size:30px;line-height:1}
+#chatBtn{position:fixed;right:12px;top:calc(50% + 62px);width:96px;height:56px;border-radius:16px;border:3px solid #fff;background:linear-gradient(#4dabf7,#1c7ed6);color:#fff;font:900 15px "Noto Sans KR";box-shadow:0 5px 0 rgba(0,0,0,.4);cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+#quick{position:fixed;right:120px;top:calc(50% - 40px);display:none;grid-template-columns:1fr 1fr;gap:6px;padding:10px;background:rgba(20,22,28,.85);border-radius:14px;z-index:15;width:280px}
+#quick button{border:none;border-radius:10px;padding:9px 6px;font:900 14px "Noto Sans KR";color:#222;background:#fff;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+#quick button:active{transform:translateY(2px);box-shadow:none}#auto.on{background:linear-gradient(#69db7c,#2b8a3e);animation:glow2 1s infinite alternate}
 @keyframes glow2{to{box-shadow:0 5px 0 rgba(0,0,0,.4),0 0 18px #8ce99a}}
 .sbtn svg{width:30px;height:30px}
 #hint{position:fixed;left:50%;bottom:74px;transform:translateX(-50%);width:min(420px,80vw);padding:6px 10px;font-size:12.5px;font-weight:700;text-align:center}
@@ -85,14 +89,14 @@ canvas{display:block}
 #loading{position:fixed;inset:0;background:#0d1117;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;z-index:50}
 @media (max-width:640px){
  #lb{font-size:11px;width:44vw}#lb td{max-width:70px;padding:2px 4px}#lb th{padding:2px 4px}
- .st{min-width:76px;padding:5px 8px 6px;border-width:2px;border-radius:12px}.st small{font-size:11px}.st span{font-size:18px}#stats{gap:5px}#auto{width:74px;height:74px;font-size:12px}#auto b{font-size:24px}#record{font-size:13px}
+ .st{min-width:76px;padding:5px 8px 6px;border-width:2px;border-radius:12px}.st small{font-size:11px}.st span{font-size:18px}#stats{gap:5px}#auto{width:74px;height:74px;font-size:12px}#chatBtn{width:74px;height:46px;font-size:13px;top:calc(50% + 46px)}#quick{right:94px;width:250px}#auto b{font-size:24px}#record{font-size:13px}
  #chat{font-size:11px;max-height:96px}
  .sbtn{width:52px;height:52px}.sbtn b{font-size:20px}
  #stats{bottom:34px}
  #hint{bottom:64px}
 }
 @media (pointer:coarse){
- #stats{bottom:14px}#record{bottom:84px!important;left:8px}#auto{top:auto;bottom:250px;transform:none}
+ #stats{bottom:14px}#record{bottom:84px!important;left:8px}#auto{top:auto;bottom:250px;transform:none}#chatBtn{top:auto;bottom:334px}#quick{top:auto;bottom:250px}
  #hint{bottom:72px;width:44vw;font-size:11px}
  #joy{left:84px;bottom:128px;width:100px;height:100px}#joy i{left:23px;top:23px}
  #jump{bottom:140px;right:14px;width:76px;height:76px}
@@ -118,6 +122,8 @@ canvas{display:block}
  <button class="sbtn" id="bSnd"><b>🔊</b>소리</button>
 </div>
 <button id="auto"><b>▶</b>자동 승리</button>
+<button id="chatBtn">💬 채팅</button>
+<div id="quick"></div>
 <div id="stats">
  <div class="st c1"><small>📏 크기</small><span id="sSize">1.000</span></div>
  <div class="st c2"><small>🏆 승리</small><span id="sWins">0</span></div>
@@ -530,6 +536,11 @@ addEventListener('pointerdown',firstGesture);addEventListener('keydown',firstGes
 
 // ================= 같은 서버에서 같이 하기 (진짜 플레이어) =================
 let ROOM=null,netT=0;
+const QUICK=['안녕! 👋','같이 하자!','따라와!','잠깐만!','고마워!','대단해! 👍','환생했어! ⭐','구멍 통과! 🎉','재미있다! 😄','잘 가! 👋'];
+const myChat={i:-1,k:0};
+function bubble(g,text){if(!g)return;if(g.userData.bubble){g.remove(g.userData.bubble);}const b=label(text,{bg:'rgba(255,255,255,.95)',color:'#1d2029',size:50,scale:5,stroke:false});b.position.y=7.7;g.add(b);g.userData.bubble=b;g.userData.bubbleT=performance.now()+6000;}
+function bubbleTick(g){if(g&&g.userData.bubble&&performance.now()>g.userData.bubbleT){g.remove(g.userData.bubble);g.userData.bubble=null;}}
+function sayQuick(i){myChat.i=i;myChat.k++;bubble(me.mesh,QUICK[i]);chat(`${P.name}: ${QUICK[i]}`,false);netT=0;}
 function setNet(t){const el=document.getElementById('netStat');if(el)el.textContent=t;}const netPeers=new Map();
 const JOINED=Date.now();
 const OUTFITS=[[0x0d69ac,0xa4bd47],[0xe8590c,0x1c2b4a],[0x7048e8,0x343a40],[0xd6336c,0x1c2b4a],[0x0ca678,0x495057],[0xfab005,0x5c3d2e]];
@@ -547,14 +558,21 @@ function syncPeers(list){const seen=new Set();
   const oi=oIdx(p.peer);
   if(!n||n.name!==name||n.o!==oi){const old=n;if(n)scene.remove(n.mesh);const mesh=makeChar(name,...OUTFITS[oi],0xf5cd30);scene.add(mesh);
    if(!old)chat(`${name}님이 같은 서버에 들어왔어요! 👋`);n=Object.assign(old||{x:num(pr.x),y:num(pr.y),z:num(pr.z,20),face:0},{mesh,name,o:oi});netPeers.set(p.peer,n);}
+  if(n.ck===undefined)n.ck=Array.isArray(pr.c)?num(pr.c[1]):0;
+  if(Array.isArray(pr.c)&&pr.c.length===2){const ci=Math.floor(num(pr.c[0],-1)),ck=num(pr.c[1]);if(ck!==n.ck&&ci>=0&&ci<QUICK.length){n.ck=ck;bubble(n.mesh,QUICK[ci]);chat(`${name}: ${QUICK[ci]}`,false);}}
+  const pe=(Array.isArray(pr.pe)?pr.pe:[]).filter(t=>typeof t==='string'&&Object.prototype.hasOwnProperty.call(PETS,t)).slice(0,3),pk=pe.join(',');
+  if(n.pk!==pk){(n.pets||[]).forEach(q=>scene.remove(q.s));n.pets=pe.map((t,ii)=>({s:(()=>{const m=makePetMesh(t);scene.add(m);return m;})(),i:ii,x:n.x,z:n.z}));n.pk=pk;}
   n.tx=num(pr.x);n.ty=num(pr.y);n.tz=num(pr.z,20);n.tf=num(pr.f);n.S=Math.max(0,num(pr.S));n.rb=Math.max(0,Math.min(100,Math.floor(num(pr.rb))));n.w=pr.w===1?1:0;n.amp=pr.m?1:0;}
- for(const [k,n] of netPeers){if(!seen.has(k)){scene.remove(n.mesh);netPeers.delete(k);chat(`${n.name}님이 서버에서 나갔어요.`);}}}
+ for(const [k,n] of netPeers){if(!seen.has(k)){scene.remove(n.mesh);(n.pets||[]).forEach(q=>scene.remove(q.s));netPeers.delete(k);chat(`${n.name}님이 서버에서 나갔어요.`);}}}
 function updateNet(dt){
  for(const n of netPeers.values()){const k=Math.min(1,10*dt);n.x+=(n.tx-n.x)*k;n.y+=(n.ty-n.y)*k;n.z+=(n.tz-n.z)*k;
   let df=n.tf-n.face;while(df>Math.PI)df-=2*Math.PI;while(df<-Math.PI)df+=2*Math.PI;n.face+=df*k;
-  n.mesh.visible=n.w===P.world;n.mesh.position.set(n.x,n.y,n.z);n.mesh.scale.setScalar(vis(sizeOf(n.S)));n.mesh.rotation.y=n.face;animChar(n.mesh,n.amp,dt);}
+  n.mesh.visible=n.w===P.world;n.mesh.position.set(n.x,n.y,n.z);n.mesh.scale.setScalar(vis(sizeOf(n.S)));n.mesh.rotation.y=n.face;animChar(n.mesh,n.amp,dt);bubbleTick(n.mesh);
+  const pv=vis(sizeOf(n.S)),tm=performance.now()/1000;(n.pets||[]).forEach((q,i)=>{const ang=n.face+Math.PI+(i-1)*0.7,r=3.2*pv;const tx=n.x+Math.sin(ang)*r,tz=n.z+Math.cos(ang)*r;q.x+=(tx-q.x)*Math.min(1,6*dt);q.z+=(tz-q.z)*Math.min(1,6*dt);
+   const ps=1.15*pv,fl=q.s.userData.fly||q.s.userData.swim;q.s.visible=n.mesh.visible;q.s.position.set(q.x,n.y+(fl?1.3+Math.sin(tm*3+i)*0.2:Math.abs(Math.sin(tm*(n.amp?9:3)+i))*0.25)*ps,q.z);q.s.scale.setScalar(ps);q.s.rotation.y=n.face;animPet(q.s,tm,i);});}
+ bubbleTick(me.mesh);
  if(!ROOM)return;netT-=dt;if(netT>0)return;netT=0.2;
- ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0}).catch(()=>{});}
+ ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0,c:myChat.i>=0?[myChat.i,myChat.k]:null,pe:P.eq.map(id=>{const p=P.pets.find(x=>x.id===id);return p?p.t:null;}).filter(Boolean)}).catch(()=>{});}
 function initNet(){(async()=>{
  // 1) Claude 안에서 열면: Claude 같은 서버 기능
  try{if(window.claude&&typeof window.claude.use==='function'){const r=await window.claude.use('room');if(r){ROOM=r;r.onPeers(ch=>syncPeers(ch.peers),()=>{ROOM=null;});return;}}}catch(e){}
@@ -663,6 +681,9 @@ function show(name){openPanel=name;rbKey=name==='rb'?P.rb+'|'+(P.S>=rbCost(P.rb)
 function hide(){openPanel=null;modal.style.display='none';}
 $('mx').onclick=hide;modal.addEventListener('pointerdown',e=>{if(e.target===modal)hide();});
 $('bRb').onclick=()=>show('rb');$('bPet').onclick=()=>show('pet');$('bEgg').onclick=()=>show('egg');$('bWorld').onclick=()=>show('world');
+$('quick').innerHTML=QUICK.map((q,i)=>`<button data-q="${i}">${q}</button>`).join('');
+$('quick').querySelectorAll('button').forEach(b=>b.onclick=()=>{sayQuick(+b.dataset.q);$('quick').style.display='none';});
+$('chatBtn').onclick=()=>{const q=$('quick');q.style.display=q.style.display==='grid'?'none':'grid';};
 $('auto').onclick=()=>{autoOn=!autoOn;$('auto').classList.toggle('on',autoOn);$('auto').innerHTML=autoOn?'<b>■</b>자동 끄기':'<b>▶</b>자동 승리';};$('bName').onclick=()=>show('name');$('bReset').onclick=()=>show('reset');
 $('bSnd').onclick=()=>{muted=!muted;savePrefs();updSndBtns();};
 $('bMus').onclick=()=>{BGM.on=!BGM.on;savePrefs();if(BGM.on)bgmStart();else bgmStop();updSndBtns();};
@@ -700,7 +721,7 @@ function render(){
   <div class="row"><button class="btn" id="resetYes" style="background:#e03131;box-shadow:0 4px 0 #8e2a23">처음부터 하기</button><button class="btn blue" id="resetNo">취소</button></div>`;
  }
  else if(openPanel==='name'){
-  h=`<h2>✏️ 닉네임 정하기</h2><div style="font-size:13px;color:#c4cad6">영어, 숫자, 밑줄(_), 한글로 3~16글자</div>
+  h=`<h2>✏️ 닉네임 정하기</h2><div style="font-size:13px;color:#c4cad6">영어, 숫자, 밑줄(_), 한글로 2~16글자</div>
   <input id="nameIn" maxlength="16" value="${P.named?P.name:''}" placeholder="닉네임을 입력하세요" autocomplete="off">
   <div id="nameErr" style="font-size:13px;color:#ff8a8a;min-height:18px"></div><button class="btn" id="nameOk">저장</button>`;
  }
@@ -718,7 +739,7 @@ function render(){
  if($('resetYes'))$('resetYes').onclick=()=>{Object.assign(P,{S:0,rb:0,wins:0,pets:[],eq:[],world:0,w2:false,nextId:1,named:false,name:'Guest_'+(1000+Math.floor(Math.random()*9000))});scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);
   autoOn=false;$('auto').classList.remove('on');$('auto').innerHTML='<b>▶</b>자동 승리';buildWorld(0);teleportSpawn();rebuildPets();save();chat('처음부터 다시 시작했어요!');show('name');};
  const nok=$('nameOk');if(nok){setTimeout(()=>{try{$('nameIn').focus();}catch(e){}},50);nok.onclick=()=>{const v=$('nameIn').value.trim();
-  if(!/^[A-Za-z0-9_가-힣]{3,16}$/.test(v)){$('nameErr').textContent='3~16글자, 영어·숫자·밑줄·한글만 쓸 수 있어요';return;}
+  if(!/^[A-Za-z0-9_가-힣]{2,16}$/.test(v)){$('nameErr').textContent='2~16글자, 영어·숫자·밑줄·한글만 쓸 수 있어요';return;}
   if(AI_NAMES.includes(v)){$('nameErr').textContent='이미 다른 플레이어가 쓰는 이름이에요';return;}
   const old=P.name;P.name=v;P.named=true;scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);save();hide();
   if(old!==v)chat(`${old}님이 이름을 ${v}(으)로 바꿨어요.`);updateLB();};}
@@ -872,7 +893,7 @@ function start(){
 let started=false;const go=()=>{if(!started){started=true;start();}};
 if(document.fonts&&document.fonts.ready){document.fonts.load('900 20px "Noto Sans KR"').then(go,go);setTimeout(go,2500);}else go();
 // 테스트용 훅
-window.__game={P,ais,me,rbCost,sizeOf,WORLDS,SEQ,goWorld,doRebirth};
+window.__game={P,ais,me,rbCost,sizeOf,WORLDS,SEQ,goWorld,doRebirth,netPeers};
 })();
 </script>
 </body>
