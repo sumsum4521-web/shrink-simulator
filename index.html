@@ -166,7 +166,7 @@ canvas{display:block}
 (()=>{
 'use strict';
 // ================= 자동 업데이트 =================
-const GAME_VERSION='20261121-194551';
+const GAME_VERSION='20261121-194746';
 (function autoUpdate(){if(!/^https?:$/.test(location.protocol)||window.claude)return;let pending=false;
  const check=async()=>{if(pending)return;try{const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(new RegExp("const GAME_"+"VERSION='([^']+)'"));
   if(m&&m[1]!==GAME_VERSION){pending=true;const go=()=>{if(document.getElementById('modal').style.display==='flex'||document.getElementById('hatch').style.display==='flex'){setTimeout(go,2000);return;}
@@ -575,7 +575,7 @@ addEventListener('pointerdown',firstGesture);addEventListener('keydown',firstGes
 
 // ================= 같은 서버에서 같이 하기 (진짜 플레이어) =================
 let ROOM=null,netT=0;
-const QUICK=['안녕! 👋','같이 하자!','따라와!','잠깐만!','고마워!','대단해! 👍','환생했어! ⭐','구멍 통과! 🎉','재미있다! 😄','잘 가! 👋','나 이제 나갈게!'];
+const QUICK=['안녕! 👋','같이 하자!','따라와!','잠깐만!','고마워!','대단해! 👍','환생했어! ⭐','구멍 통과! 🎉','재미있다! 😄','잘 가! 👋','나 이제 나갈게!','세계 2 열었다! 🏜️','내일 만나자! 🌙'];
 const myChat={i:-1,k:0};
 function bubble(g,text){if(!g)return;if(g.userData.bubble){g.remove(g.userData.bubble);}const b=label(text,{bg:'rgba(255,255,255,.95)',color:'#1d2029',size:50,scale:5,stroke:false});b.position.y=7.7;g.add(b);g.userData.bubble=b;g.userData.bubbleT=performance.now()+6000;}
 function bubbleTick(g){if(g&&g.userData.bubble&&performance.now()>g.userData.bubbleT){g.remove(g.userData.bubble);g.userData.bubble=null;}}
