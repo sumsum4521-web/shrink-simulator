@@ -106,7 +106,7 @@ canvas{display:block}
 <div id="loading">작아지기 시뮬레이터 불러오는 중…</div>
 <div id="game"></div>
 <div id="chat" class="glass"></div>
-<div id="lb" class="glass"><div class="hd" id="lbHd"><span>🏆 순위 (작은 순)</span><span id="lbTog">▾</span></div><table id="lbT"></table></div>
+<div id="lb" class="glass"><div class="hd" id="lbHd"><span>🏆 순위 (작은 순)</span><span><small id="netStat" style="font-weight:700;color:#8ce99a;margin-right:6px"></small><span id="lbTog">▾</span></span></div><table id="lbT"></table></div>
 <div id="side">
  <button class="sbtn" id="bRb"><svg viewBox="0 0 32 32"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#f59f00"/></linearGradient></defs><path d="M16 4a12 12 0 1 0 11.3 8" fill="none" stroke="url(#gg)" stroke-width="3.6" stroke-linecap="round"/><path d="M22.5 3.5l6 7.5-9.2 1.8z" fill="#f59f00"/><path d="M16 9.5l2 4.2 4.5.6-3.3 3.1.9 4.5-4.1-2.3-4.1 2.3.9-4.5-3.3-3.1 4.5-.6z" fill="#fff3bf" stroke="#f59f00" stroke-width="1"/></svg>환생</button>
  <button class="sbtn" id="bPet"><b>🐾</b>펫</button>
@@ -529,7 +529,8 @@ const firstGesture=()=>{ensureAudio();bgmStart();};
 addEventListener('pointerdown',firstGesture);addEventListener('keydown',firstGesture);
 
 // ================= 같은 서버에서 같이 하기 (진짜 플레이어) =================
-let ROOM=null,netT=0;const netPeers=new Map();
+let ROOM=null,netT=0;
+function setNet(t){const el=document.getElementById('netStat');if(el)el.textContent=t;}const netPeers=new Map();
 const JOINED=Date.now();
 const OUTFITS=[[0x0d69ac,0xa4bd47],[0xe8590c,0x1c2b4a],[0x7048e8,0x343a40],[0xd6336c,0x1c2b4a],[0x0ca678,0x495057],[0xfab005,0x5c3d2e]];
 function setMyOutfit(i){if((me.outfit||0)===i)return;me.outfit=i;scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[i],0xf5cd30,true);scene.add(me.mesh);}
@@ -552,20 +553,28 @@ function updateNet(dt){
  for(const n of netPeers.values()){const k=Math.min(1,10*dt);n.x+=(n.tx-n.x)*k;n.y+=(n.ty-n.y)*k;n.z+=(n.tz-n.z)*k;
   let df=n.tf-n.face;while(df>Math.PI)df-=2*Math.PI;while(df<-Math.PI)df+=2*Math.PI;n.face+=df*k;
   n.mesh.visible=n.w===P.world;n.mesh.position.set(n.x,n.y,n.z);n.mesh.scale.setScalar(vis(sizeOf(n.S)));n.mesh.rotation.y=n.face;animChar(n.mesh,n.amp,dt);}
- if(!ROOM)return;netT-=dt;if(netT>0)return;netT=0.08;
+ if(!ROOM)return;netT-=dt;if(netT>0)return;netT=0.14;
  ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0}).catch(()=>{});}
 function initNet(){(async()=>{
  // 1) Claude 안에서 열면: Claude 같은 서버 기능
  try{if(window.claude&&typeof window.claude.use==='function'){const r=await window.claude.use('room');if(r){ROOM=r;r.onPeers(ch=>syncPeers(ch.peers),()=>{ROOM=null;});return;}}}catch(e){}
- // 2) 인터넷 주소(GitHub)로 열면: 누구나 같은 서버에 들어오는 P2P 연결
- try{const T=await import('https://cdn.jsdelivr.net/npm/trystero@0.27.0/+esm');
-  const room=T.joinRoom({appId:'sumsum4521-web/shrink-simulator',identity:'none'},'main-server');
-  const st=room.makeUserState('p',{});const others=new Map();
-  const push=()=>syncPeers([{peer:'__me',sameTab:true,kind:'viewer',presence:{}},...[...others].map(([id,v])=>({peer:String(id),sameTab:false,kind:'viewer',presence:(v&&typeof v==='object')?v:{}}))]);
-  st.onChange((v,info)=>{info=info||{};if(info.self)return;if(info.removed||info.online===false)others.delete(info.userId);else others.set(info.userId,v);push();});
-  if(room.onUserLeave)room.onUserLeave(c=>{if(c&&others.delete(c.userId))push();});
-  ROOM={presence:d=>{try{const pr=st.set(d);if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}return Promise.resolve();}};
- }catch(e){console.warn('multiplayer off',e);}
+ // 2) 인터넷 주소(GitHub)로 열면: 중계 서버(MQTT)를 거쳐 누구나 같은 서버에 들어옴
+ try{setNet('연결 중…');
+  if(!window.mqtt)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/mqtt@5.16.1/dist/mqtt.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
+  const url=window.__MQTT_URL||'wss://broker.hivemq.com:8884/mqtt';
+  const id='p'+Math.random().toString(36).slice(2,10),base='sumsum4521/shrinksim/v1/',my=base+'p/'+id;
+  const c=window.mqtt.connect(url,{clientId:'ss_'+id,clean:true,keepalive:20,reconnectPeriod:3000,connectTimeout:10000,will:{topic:my,payload:'',qos:0,retain:false}});
+  const others=new Map();
+  const push=()=>{syncPeers([{peer:'__me',sameTab:true,kind:'viewer',presence:{}},...[...others].map(([k,o])=>({peer:k,sameTab:false,kind:'viewer',presence:o.v}))]);setNet(c.connected?`🌐 접속 ${others.size+1}명`:'연결 끊김');};
+  c.on('connect',()=>{c.subscribe(base+'p/+');push();});
+  c.on('close',()=>setNet('연결 끊김 · 다시 연결 중'));
+  c.on('message',(topic,buf)=>{const pid=topic.slice((base+'p/').length);if(pid===id)return;const str=buf.toString();
+   if(!str){if(others.delete(pid))push();return;}if(str.length>3000)return;
+   try{const v=JSON.parse(str);if(!v||typeof v!=='object')return;const had=others.has(pid);others.set(pid,{v,t:Date.now()});if(!had)push();else pendingPush=true;}catch(e){}});
+  let pendingPush=false;setInterval(()=>{const now=Date.now();for(const [k,o] of others)if(now-o.t>7000){others.delete(k);pendingPush=true;}if(pendingPush){pendingPush=false;push();}},150);
+  addEventListener('pagehide',()=>{try{c.publish(my,'');}catch(e){}});
+  ROOM={presence:d=>{try{if(c.connected)c.publish(my,JSON.stringify(d));}catch(e){}return Promise.resolve();}};
+ }catch(e){setNet('같이 하기 연결 실패');console.warn('multiplayer off',e);}
 })();}
 
 // ================= 플레이어 =================
