@@ -553,7 +553,7 @@ function updateNet(dt){
  for(const n of netPeers.values()){const k=Math.min(1,10*dt);n.x+=(n.tx-n.x)*k;n.y+=(n.ty-n.y)*k;n.z+=(n.tz-n.z)*k;
   let df=n.tf-n.face;while(df>Math.PI)df-=2*Math.PI;while(df<-Math.PI)df+=2*Math.PI;n.face+=df*k;
   n.mesh.visible=n.w===P.world;n.mesh.position.set(n.x,n.y,n.z);n.mesh.scale.setScalar(vis(sizeOf(n.S)));n.mesh.rotation.y=n.face;animChar(n.mesh,n.amp,dt);}
- if(!ROOM)return;netT-=dt;if(netT>0)return;netT=0.14;
+ if(!ROOM)return;netT-=dt;if(netT>0)return;netT=0.2;
  ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0}).catch(()=>{});}
 function initNet(){(async()=>{
  // 1) Claude 안에서 열면: Claude 같은 서버 기능
@@ -561,19 +561,24 @@ function initNet(){(async()=>{
  // 2) 인터넷 주소(GitHub)로 열면: 중계 서버(MQTT)를 거쳐 누구나 같은 서버에 들어옴
  try{setNet('연결 중…');
   if(!window.mqtt)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/mqtt@5.16.1/dist/mqtt.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});
-  const url=window.__MQTT_URL||'wss://broker.hivemq.com:8884/mqtt';
-  const id='p'+Math.random().toString(36).slice(2,10),base='sumsum4521/shrinksim/v1/',my=base+'p/'+id;
-  const c=window.mqtt.connect(url,{clientId:'ss_'+id,clean:true,keepalive:20,reconnectPeriod:3000,connectTimeout:10000,will:{topic:my,payload:'',qos:0,retain:false}});
-  const others=new Map();
-  const push=()=>{syncPeers([{peer:'__me',sameTab:true,kind:'viewer',presence:{}},...[...others].map(([k,o])=>({peer:k,sameTab:false,kind:'viewer',presence:o.v}))]);setNet(c.connected?`🌐 접속 ${others.size+1}명`:'연결 끊김');};
-  c.on('connect',()=>{c.subscribe(base+'p/+');push();});
-  c.on('close',()=>setNet('연결 끊김 · 다시 연결 중'));
-  c.on('message',(topic,buf)=>{const pid=topic.slice((base+'p/').length);if(pid===id)return;const str=buf.toString();
+  // 중계 서버 두 곳에 동시에 연결 (하나가 끊겨도 계속)
+  const urls=window.__MQTT_URLS||['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'];
+  const id='p'+Math.random().toString(36).slice(2,10),base='sumsum4521/shrinksim/v2/',my=base+'p/'+id;
+  const others=new Map();let seq=0,lastSent='',lastSentT=0,pendingPush=false,downSince=0;
+  const anyUp=()=>clients.some(c=>c.connected);
+  const status=()=>{if(anyUp()){downSince=0;setNet(`🌐 접속 ${others.size+1}명`);}else{if(!downSince)downSince=Date.now();setNet(Date.now()-downSince>4000?'다시 연결 중…':'연결 중…');}};
+  const push=()=>{syncPeers([{peer:'__me',sameTab:true,kind:'viewer',presence:{}},...[...others].map(([k,o])=>({peer:k,sameTab:false,kind:'viewer',presence:o.v}))]);status();};
+  const onMsg=(topic,buf)=>{const pid=topic.slice((base+'p/').length);if(pid===id||pid.length>20)return;const str=buf.toString();
    if(!str){if(others.delete(pid))push();return;}if(str.length>3000)return;
-   try{const v=JSON.parse(str);if(!v||typeof v!=='object')return;const had=others.has(pid);others.set(pid,{v,t:Date.now()});if(!had)push();else pendingPush=true;}catch(e){}});
-  let pendingPush=false;setInterval(()=>{const now=Date.now();for(const [k,o] of others)if(now-o.t>7000){others.delete(k);pendingPush=true;}if(pendingPush){pendingPush=false;push();}},150);
-  addEventListener('pagehide',()=>{try{c.publish(my,'');}catch(e){}});
-  ROOM={presence:d=>{try{if(c.connected)c.publish(my,JSON.stringify(d));}catch(e){}return Promise.resolve();}};
+   try{const v=JSON.parse(str);if(!v||typeof v!=='object')return;const q=num(v.q);const o=others.get(pid);
+    if(o&&q<=o.q){o.t=Date.now();return;} // 다른 서버로 늦게 온 같은 메시지는 무시
+    others.set(pid,{v,q,t:Date.now()});if(!o)push();else pendingPush=true;}catch(e){}};
+  const clients=urls.map(u=>{const c=window.mqtt.connect(u,{clientId:'ss_'+id+'_'+Math.random().toString(36).slice(2,6),clean:true,keepalive:30,reconnectPeriod:2000,connectTimeout:8000,will:{topic:my,payload:'',qos:0,retain:false}});
+   c.on('connect',()=>{c.subscribe(base+'p/+');lastSent='';status();});c.on('close',status);c.on('error',()=>{});c.on('message',onMsg);return c;});
+  setInterval(()=>{const now=Date.now();for(const [k,o] of others)if(now-o.t>12000){others.delete(k);pendingPush=true;}if(pendingPush){pendingPush=false;push();}else status();},200);
+  addEventListener('pagehide',()=>{clients.forEach(c=>{try{c.publish(my,'');}catch(e){}});});
+  ROOM={presence:d=>{const str=JSON.stringify(d),now=Date.now();if(str===lastSent&&now-lastSentT<2000)return Promise.resolve();
+   lastSent=str;lastSentT=now;d.q=++seq;const out=JSON.stringify(d);clients.forEach(c=>{try{if(c.connected)c.publish(my,out);}catch(e){}});return Promise.resolve();}};
  }catch(e){setNet('같이 하기 연결 실패');console.warn('multiplayer off',e);}
 })();}
 
