@@ -49,6 +49,9 @@ canvas{display:block}
 #prompt{position:fixed;left:50%;bottom:132px;transform:translateX(-50%);display:none}
 #prompt button{border:none;border-radius:12px;padding:10px 18px;font:900 15px "Noto Sans KR";color:#fff;background:#2b8a3e;box-shadow:0 4px 0 #1b5e2a;cursor:pointer}
 #prompt button.no{background:#666;box-shadow:0 4px 0 #333}
+#tut{position:fixed;left:50%;top:12px;transform:translateX(-50%);width:min(520px,92vw);display:none;background:rgba(20,22,28,.88);border:3px solid #ffd43b;border-radius:16px;padding:10px 14px;z-index:12;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.35)}
+#tut .tstep{font-size:12px;color:#ffd43b;font-weight:900}#tut .ttext{font-size:17px;font-weight:900;margin:4px 0 8px;line-height:1.4}#tut .tbtns{display:flex;gap:8px;justify-content:center}
+@media (max-width:640px){#tut{top:104px}#tut .ttext{font-size:14px}}
 #toast{position:fixed;left:50%;top:22%;transform:translateX(-50%);font-size:20px;font-weight:900;text-align:center;text-shadow:0 2px 0 #000,0 0 8px #000;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap}
 .pop{position:fixed;pointer-events:none;font-weight:900;font-size:18px;color:#7dffb0;text-shadow:0 2px 0 #000;animation:up .8s forwards}
 .bigpop{position:fixed;left:50%;top:38%;transform:translateX(-50%);pointer-events:none;font-weight:900;font-size:40px;color:#ffd84a;text-shadow:0 3px 0 #000,0 0 12px #000;animation:big 1.3s forwards;white-space:nowrap}
@@ -132,6 +135,7 @@ canvas{display:block}
 </div>
 <div id="prompt"><button id="promptB"></button></div>
 <div id="toast"></div>
+<div id="tut"></div>
 <div id="record">[가장 환생 많이한 기록-100번 : <b>플레이어DDddDDDdDdDd09</b>]</div>
 <div id="joy"><i id="joyK"></i></div>
 <button id="jump">점프</button>
@@ -600,6 +604,30 @@ function initNet(){(async()=>{
  }catch(e){setNet('같이 하기 연결 실패');console.warn('multiplayer off',e);}
 })();}
 
+// ================= 튜토리얼 =================
+const TUT={on:false,step:0,taps:0,won:false,arrow:null};
+const TUT_STEPS=[
+ {t:'🏃 왼쪽 맨 앞 회색 러닝머신에 올라가 보세요!',done:()=>me.onTm===0,at:()=>{const p=TM_POS(0);return [p.x,4.5,p.z];}},
+ {t:'👆 화면을 톡톡 3번 눌러 보세요! 누를 때마다 작아져요',done:()=>TUT.taps>=3},
+ {t:'⭕ 첫 번째 동그라미 구멍을 지나가 보세요! (처음 크기로도 통과할 수 있어요)',done:()=>P.world===0&&me.z<WALL_Z(0)-2,at:()=>[0,7.5,WALL_Z(0)+1.5]},
+ {t:'🟨 오른쪽 노란 판을 밟으면 승리를 받아요!',done:()=>TUT.won,at:()=>[PAD_X,3.2,PAD_Z(0)]},
+ {t:'📏 더 작아질수록 더 먼 구멍을 지나가요. 구멍 위에 쓰인 크기를 잘 보세요!',btn:true},
+ {t:'🥚 승리를 모으면 왼쪽 알 버튼으로 펫을 살 수 있어요. 펫은 배수를 올려 줘요!',btn:true},
+ {t:'⭐ 충분히 작아지면 환생! 크기는 처음으로 돌아가지만 더 빨리 작아져요. 좋은 러닝머신도 열려요!',btn:true},
+ {t:'🎉 튜토리얼 끝! 💬 채팅으로 친구에게 인사해 보세요. 자동 승리 버튼도 있어요!',btn:true,last:true}
+];
+function tutStart(){TUT.on=true;TUT.step=0;TUT.taps=0;TUT.won=false;tutRender();}
+function tutEnd(){TUT.on=false;P.tut=true;save();$('tut').style.display='none';if(TUT.arrow)TUT.arrow.visible=false;}
+function tutNext(){TUT.step++;TUT.taps=0;TUT.won=false;sfx.win();if(TUT.step>=TUT_STEPS.length){tutEnd();return;}tutRender();}
+function tutRender(){const S=TUT_STEPS[TUT.step];const el=$('tut');el.style.display='block';
+ el.innerHTML=`<div class="tstep">튜토리얼 ${TUT.step+1} / ${TUT_STEPS.length}</div><div class="ttext">${S.t}</div><div class="tbtns">${S.btn?`<button class="btn small" id="tutOk">${S.last?'끝!':'다음 ▶'}</button>`:''}<button class="btn small" id="tutSkip" style="background:#555;box-shadow:0 3px 0 #333">건너뛰기</button></div>`;
+ if($('tutOk'))$('tutOk').onclick=tutNext;$('tutSkip').onclick=tutEnd;}
+function tutTick(dt){if(!TUT.on)return;const S=TUT_STEPS[TUT.step];
+ if(!TUT.arrow){const g=new THREE.Group();const m=new THREE.MeshBasicMaterial({color:0xffd43b});const cone=new THREE.Mesh(new THREE.ConeGeometry(0.8,1.6,16),m);cone.rotation.x=Math.PI;g.add(cone);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.75,0.12,8,24),new THREE.MeshBasicMaterial({color:0xff922b}));ring.rotation.x=Math.PI/2;ring.position.y=0.8;g.add(ring);scene.add(g);TUT.arrow=g;}
+ if(S.at&&P.world===0){const [x,y,z]=S.at(),t=performance.now()/1000;TUT.arrow.visible=true;TUT.arrow.position.set(x,y+Math.abs(Math.sin(t*3))*0.8,z);TUT.arrow.rotation.y=t*2;}else TUT.arrow.visible=false;
+ if(S.done&&S.done())tutNext();}
+
 // ================= 플레이어 =================
 const me={x:SPAWN.x,y:0,z:SPAWN.z,vy:0,grounded:true,face:Math.PI,mesh:null,petMeshes:[]};
 function size(){return sizeOf(P.S);}
@@ -671,7 +699,7 @@ cv.addEventListener('pointermove',e=>{const d=drags[e.pointerId];if(!d)return;co
  if(d.moved){CAM.yaw-=mx*0.008;CAM.pitch=Math.max(0.05,Math.min(1.35,CAM.pitch+my*0.006));}});
 const dragEnd=e=>{const d=drags[e.pointerId];delete drags[e.pointerId];if(!d||d.moved||e.type==='pointercancel')return;
  const now=performance.now();if(now-lastTap<70)return;lastTap=now;
- const before=size();P.S+=0.15*power();const dd=before-size();sfx.tap();pop(e.clientX,e.clientY,'-'+(dd>=0.001?dd.toFixed(3):dd.toPrecision(2)));};
+ TUT.taps++;const before=size();P.S+=0.15*power();const dd=before-size();sfx.tap();pop(e.clientX,e.clientY,'-'+(dd>=0.001?dd.toFixed(3):dd.toPrecision(2)));};
 cv.addEventListener('pointerup',dragEnd);cv.addEventListener('pointercancel',dragEnd);
 cv.addEventListener('wheel',e=>{e.preventDefault();CAM.zoom=Math.max(0.35,Math.min(2.2,CAM.zoom*(e.deltaY>0?1.1:0.9)));},{passive:false});
 
@@ -723,7 +751,7 @@ function render(){
  else if(openPanel==='name'){
   h=`<h2>✏️ 닉네임 정하기</h2><div style="font-size:13px;color:#c4cad6">영어, 숫자, 밑줄(_), 한글로 2~16글자</div>
   <input id="nameIn" maxlength="16" value="${P.named?P.name:''}" placeholder="닉네임을 입력하세요" autocomplete="off">
-  <div id="nameErr" style="font-size:13px;color:#ff8a8a;min-height:18px"></div><button class="btn" id="nameOk">저장</button>`;
+  <div id="nameErr" style="font-size:13px;color:#ff8a8a;min-height:18px"></div><div class="row"><button class="btn" id="nameOk">저장</button>${P.named?'<button class="btn blue" id="tutAgain">📖 튜토리얼 다시 하기</button>':''}</div>`;
  }
  else if(openPanel==='world'){
   const can2=P.w2||P.wins>=W2_NEED;
@@ -736,13 +764,14 @@ function render(){
  pc.innerHTML=h;
  const rbBtn=$('doRb');if(rbBtn)rbBtn.onclick=doRebirth;
  if($('resetNo'))$('resetNo').onclick=hide;
- if($('resetYes'))$('resetYes').onclick=()=>{Object.assign(P,{S:0,rb:0,wins:0,pets:[],eq:[],world:0,w2:false,nextId:1,named:false,name:'Guest_'+(1000+Math.floor(Math.random()*9000))});scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);
+ if($('resetYes'))$('resetYes').onclick=()=>{Object.assign(P,{S:0,rb:0,wins:0,pets:[],eq:[],world:0,w2:false,nextId:1,named:false,tut:false,name:'Guest_'+(1000+Math.floor(Math.random()*9000))});scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);
   autoOn=false;$('auto').classList.remove('on');$('auto').innerHTML='<b>▶</b>자동 승리';buildWorld(0);teleportSpawn();rebuildPets();save();chat('처음부터 다시 시작했어요!');show('name');};
  const nok=$('nameOk');if(nok){setTimeout(()=>{try{$('nameIn').focus();}catch(e){}},50);nok.onclick=()=>{const v=$('nameIn').value.trim();
   if(!/^[A-Za-z0-9_가-힣]{2,16}$/.test(v)){$('nameErr').textContent='2~16글자, 영어·숫자·밑줄·한글만 쓸 수 있어요';return;}
   if(AI_NAMES.includes(v)){$('nameErr').textContent='이미 다른 플레이어가 쓰는 이름이에요';return;}
-  const old=P.name;P.name=v;P.named=true;scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);save();hide();
-  if(old!==v)chat(`${old}님이 이름을 ${v}(으)로 바꿨어요.`);updateLB();};}
+  const first=!P.tut&&!TUT.on;const old=P.name;P.name=v;P.named=true;scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);save();hide();
+  if(old!==v)chat(`${old}님이 이름을 ${v}(으)로 바꿨어요.`);updateLB();if(first)setTimeout(tutStart,400);};}
+ if($('tutAgain'))$('tutAgain').onclick=()=>{hide();tutStart();};
  const be=$('bestEq');if(be)be.onclick=()=>{P.eq=P.pets.slice().sort((a,b)=>PETS[b.t].m-PETS[a.t].m).slice(0,MAX_EQ).map(p=>p.id);rebuildPets();save();render();};
  pc.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.del;P.pets=P.pets.filter(p=>p.id!==id);P.eq=P.eq.filter(x=>x!==id);rebuildPets();save();render();});
  pc.querySelectorAll('.pet').forEach(c=>c.onclick=()=>{const id=+c.dataset.id;if(P.eq.includes(id))P.eq=P.eq.filter(x=>x!==id);else{if(P.eq.length>=MAX_EQ){toast('펫은 3마리까지 장착할 수 있어요');return;}P.eq.push(id);}rebuildPets();save();render();});
@@ -806,7 +835,7 @@ function stepPlayer(dt){
  });
  me.x=nx;me.z=nz;
  // 러닝머신 위?
- let onTm=-1;TMS.forEach((t,i)=>{const p=TM_POS(i),D=TM_DIM(i);if(Math.abs(me.x-p.x)<D.w/2&&Math.abs(me.z-p.z)<D.l/2)onTm=i;});
+ let onTm=-1;TMS.forEach((t,i)=>{const p=TM_POS(i),D=TM_DIM(i);if(Math.abs(me.x-p.x)<D.w/2&&Math.abs(me.z-p.z)<D.l/2)onTm=i;});me.onTm=onTm;
  const floor=onTm>=0?0.41:0;
  me.vy-=60*v*dt;me.y+=me.vy*dt;if(me.y<=floor){me.y=floor;me.vy=0;me.grounded=true;}
  // 작아지기
@@ -815,7 +844,7 @@ function stepPlayer(dt){
  if(moving&&rate===0)rate=0.35;
  P.S+=rate*pw*dt;
  // 승리 판
- for(let i=0;i<16;i++){if(Math.abs(me.x-PAD_X)<3&&Math.abs(me.z-PAD_Z(i))<1.5&&me.y<0.6){const g=W.wins[i];P.wins+=g;sfx.win();bigpop(`+${g} 승리! 🏆`);teleportSpawn();save();break;}}
+ for(let i=0;i<16;i++){if(Math.abs(me.x-PAD_X)<3&&Math.abs(me.z-PAD_Z(i))<1.5&&me.y<0.6){const g=W.wins[i];P.wins+=g;TUT.won=true;sfx.win();bigpop(`+${g} 승리! 🏆`);teleportSpawn();save();break;}}
  // 가까이 있는 것
  let pk=null;
  for(const k in EGGS){const E=EGGS[k];if(E.world!==P.world)continue;const p=EGG_POS[k];if(Math.hypot(me.x-p.x,me.z-p.z)<4){pk=k;
@@ -859,6 +888,7 @@ function updateLB(){
  $('lbT').innerHTML='<tr><th>#</th><th>이름</th><th style="text-align:right">크기</th><th style="text-align:right">환생</th></tr>'+list.map((e,i)=>`<tr class="${e.me?'me':''}"><td>${i+1}</td><td>${e.name}</td><td class="n">${fmtSize(sizeOf(e.S))}</td><td class="n">${e.rb}</td></tr>`).join('');
 }
 function loop(now){
+ tutTick(0);
  let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
  const v=stepPlayer(dt);
  ais.forEach(a=>updateAI(a,dt));
@@ -885,7 +915,7 @@ function start(){
  setTimeout(aiChurn,rnd(15000,30000));
  initMini();
  initNet();
- if(!P.named)show('name');
+ if(!P.named)show('name');else if(!P.tut)setTimeout(tutStart,800);
  if(innerWidth<640){$('lbT').style.display='none';$('lbTog').textContent='▸';}
  updateLB();updateHUD();
  requestAnimationFrame(t=>{lastT=t;loop(t);});
@@ -893,7 +923,7 @@ function start(){
 let started=false;const go=()=>{if(!started){started=true;start();}};
 if(document.fonts&&document.fonts.ready){document.fonts.load('900 20px "Noto Sans KR"').then(go,go);setTimeout(go,2500);}else go();
 // 테스트용 훅
-window.__game={P,ais,me,rbCost,sizeOf,WORLDS,SEQ,goWorld,doRebirth,netPeers};
+window.__game={P,ais,me,rbCost,sizeOf,WORLDS,SEQ,goWorld,doRebirth,netPeers,TUT};
 })();
 </script>
 </body>
