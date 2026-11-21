@@ -165,6 +165,14 @@ canvas{display:block}
 <script>
 (()=>{
 'use strict';
+// ================= 자동 업데이트 =================
+const GAME_VERSION='20261121-194551';
+(function autoUpdate(){if(!/^https?:$/.test(location.protocol)||window.claude)return;let pending=false;
+ const check=async()=>{if(pending)return;try{const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(new RegExp("const GAME_"+"VERSION='([^']+)'"));
+  if(m&&m[1]!==GAME_VERSION){pending=true;const go=()=>{if(document.getElementById('modal').style.display==='flex'||document.getElementById('hatch').style.display==='flex'){setTimeout(go,2000);return;}
+   try{window.__saveNow&&window.__saveNow();}catch(e){}const d=document.createElement('div');d.className='bigpop';d.style.animation='none';d.style.fontSize='26px';d.textContent='✨ 새 버전이 나왔어요! 3초 뒤에 바뀌어요';document.body.appendChild(d);setTimeout(()=>location.reload(),3000);};go();}}catch(e){}};
+ window.__auCheck=check;setInterval(check,30000);setTimeout(check,15000);})();
+
 // ================= 데이터 =================
 const SEQ=(()=>{const s=[1,1.5,2,3,4,5,6,7];while(s.length<=100){const l=s[s.length-1];s.push(l+.5,l+1,l+1.5,l+2,l+3,l+4,l+5,l+6);}return s.slice(0,101);})();
 const TMS=[{r:0,m:1},{r:1,m:1.5},{r:2,m:2},{r:3,m:2.2},{r:7,m:3},{r:15,m:4},{r:50,m:7},{r:80,m:9}];
@@ -205,6 +213,7 @@ const SAVE_KEY='shrinkSim_v1';
 let P={name:'Guest_'+(1000+Math.floor(Math.random()*9000)),S:0,rb:0,wins:0,pets:[],eq:[],world:0,w2:false,nextId:1};
 try{const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(d&&typeof d==='object')P=Object.assign(P,d);}catch(e){}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(P));}catch(e){}}
+window.__saveNow=save;
 if(!P.w2&&P.world===1)P.world=0;
 
 // ================= 유틸 =================
