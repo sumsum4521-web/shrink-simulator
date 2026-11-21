@@ -35,9 +35,6 @@ canvas{display:block}
 .st.c1{background:linear-gradient(#4dabf7,#1c7ed6)}.st.c2{background:linear-gradient(#ffd43b,#f59f00)}.st.c3{background:linear-gradient(#69db7c,#2f9e44)}.st.c4{background:linear-gradient(#b197fc,#7048e8)}
 #auto{position:fixed;right:12px;top:50%;transform:translateY(-50%);width:96px;height:96px;border-radius:20px;border:3px solid #fff;background:linear-gradient(#868e96,#495057);color:#fff;font:900 15px "Noto Sans KR";box-shadow:0 5px 0 rgba(0,0,0,.4);cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 #auto b{font-size:30px;line-height:1}
-#dirBtn{position:fixed;right:12px;top:calc(50% + 126px);width:96px;height:46px;border-radius:14px;border:3px solid #fff;background:linear-gradient(#ff6b6b,#c92a2a);color:#fff;font:900 14px "Noto Sans KR";box-shadow:0 5px 0 rgba(0,0,0,.4);cursor:pointer;display:none}
-.dirGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-#codeIn{width:100%;padding:12px;border-radius:10px;border:2px solid #4b5160;background:#11131a;color:#fff;font:900 18px "Noto Sans KR";user-select:text;-webkit-user-select:text;margin:8px 0}
 #chatBtn{position:fixed;right:12px;top:calc(50% + 62px);width:96px;height:56px;border-radius:16px;border:3px solid #fff;background:linear-gradient(#4dabf7,#1c7ed6);color:#fff;font:900 15px "Noto Sans KR";box-shadow:0 5px 0 rgba(0,0,0,.4);cursor:pointer;text-shadow:0 2px 0 rgba(0,0,0,.4)}
 #quick{position:fixed;right:120px;top:calc(50% - 40px);display:none;grid-template-columns:1fr 1fr;gap:6px;padding:10px;background:rgba(20,22,28,.85);border-radius:14px;z-index:15;width:280px}
 #quick button{border:none;border-radius:10px;padding:9px 6px;font:900 14px "Noto Sans KR";color:#222;background:#fff;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.35)}
@@ -95,14 +92,14 @@ canvas{display:block}
 #loading{position:fixed;inset:0;background:#0d1117;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;z-index:50}
 @media (max-width:640px){
  #lb{font-size:11px;width:44vw}#lb td{max-width:70px;padding:2px 4px}#lb th{padding:2px 4px}
- .st{min-width:76px;padding:5px 8px 6px;border-width:2px;border-radius:12px}.st small{font-size:11px}.st span{font-size:18px}#stats{gap:5px}#auto{width:74px;height:74px;font-size:12px}#chatBtn{width:74px;height:46px;font-size:13px;top:calc(50% + 46px)}#dirBtn{width:74px;font-size:12px;top:calc(50% + 100px)}#quick{right:94px;width:250px}#auto b{font-size:24px}#record{font-size:13px}
+ .st{min-width:76px;padding:5px 8px 6px;border-width:2px;border-radius:12px}.st small{font-size:11px}.st span{font-size:18px}#stats{gap:5px}#auto{width:74px;height:74px;font-size:12px}#chatBtn{width:74px;height:46px;font-size:13px;top:calc(50% + 46px)}#quick{right:94px;width:250px}#auto b{font-size:24px}#record{font-size:13px}
  #chat{font-size:11px;max-height:96px}
  .sbtn{width:52px;height:52px}.sbtn b{font-size:20px}
  #stats{bottom:34px}
  #hint{bottom:64px}
 }
 @media (pointer:coarse){
- #stats{bottom:14px}#record{bottom:84px!important;left:8px}#auto{top:auto;bottom:250px;transform:none}#chatBtn{top:auto;bottom:334px}#dirBtn{top:auto;bottom:392px;width:74px;height:40px;font-size:12px}#quick{top:auto;bottom:250px}
+ #stats{bottom:14px}#record{bottom:84px!important;left:8px}#auto{top:auto;bottom:250px;transform:none}#chatBtn{top:auto;bottom:334px}#quick{top:auto;bottom:250px}
  #hint{bottom:72px;width:44vw;font-size:11px}
  #joy{left:84px;bottom:128px;width:100px;height:100px}#joy i{left:23px;top:23px}
  #jump{bottom:140px;right:14px;width:76px;height:76px}
@@ -129,7 +126,6 @@ canvas{display:block}
 </div>
 <button id="auto"><b>▶</b>자동 승리</button>
 <button id="chatBtn">💬 채팅</button>
-<button id="dirBtn">🛠️ 디렉터</button>
 <div id="quick"></div>
 <div id="stats">
  <div class="st c1"><small>📏 크기</small><span id="sSize">1.000</span></div>
@@ -654,7 +650,7 @@ function addAI(name,quiet){
 function removeAI(a){scene.remove(a.mesh);ais.splice(ais.indexOf(a),1);chat(`${a.name}님이 게임을 떠났어요.`);}
 function aiTarget(a){const H=WORLDS[a.world].holes;const s=sizeOf(a.S);let k=-1;H.forEach((h,i)=>{if(s<=h)k=i;});return k;}
 function moveToward(o,tx,tz,dt,sp){const dx=tx-o.x,dz=tz-o.z,d=Math.hypot(dx,dz);if(d<0.15*sp/10+0.05){o.x=tx;o.z=tz;return true;}const st=Math.min(d,sp*dt);o.x+=dx/d*st;o.z+=dz/d*st;o.face=Math.atan2(dx,dz);return false;}
-function speedFor(v){return 16*(0.75+0.25*v)*(typeof DIR!=='undefined'&&DIR.fast?2.5:1);}
+function speedFor(v){return 16*(0.75+0.25*v);}
 function updateAI(a,dt){
  const s=sizeOf(a.S),v=vis(s),pw=SEQ[a.rb]*a.pm;let amp=0;
  const tm=aiTmIndex(a),tp=TM_POS(tm);
@@ -679,7 +675,7 @@ function aiChurn(){
 
 // ================= 입력 =================
 const keys={};
-addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT'){if(e.code==='Enter'){if($('codeOk'))$('codeOk').click();else if($('nameOk'))$('nameOk').click();}return;}keys[e.code]=true;if(e.code==='Space'){e.preventDefault();doJump();}if(e.code==='KeyE'&&promptAct)promptAct();if(e.code==='Escape')hide();});
+addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT'){if(e.code==='Enter'&&$('nameOk'))$('nameOk').click();return;}keys[e.code]=true;if(e.code==='Space'){e.preventDefault();doJump();}if(e.code==='KeyE'&&promptAct)promptAct();if(e.code==='Escape')hide();});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 const joy={x:0,y:0,id:null};
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
@@ -716,7 +712,6 @@ $('bRb').onclick=()=>show('rb');$('bPet').onclick=()=>show('pet');$('bEgg').oncl
 $('quick').innerHTML=QUICK.map((q,i)=>`<button data-q="${i}">${q}</button>`).join('');
 $('quick').querySelectorAll('button').forEach(b=>b.onclick=()=>{sayQuick(+b.dataset.q);$('quick').style.display='none';});
 $('chatBtn').onclick=()=>{const q=$('quick');q.style.display=q.style.display==='grid'?'none':'grid';};
-$('dirBtn').onclick=()=>show('dir');if(P.dir)$('dirBtn').style.display='block';
 $('auto').onclick=()=>{autoOn=!autoOn;$('auto').classList.toggle('on',autoOn);$('auto').innerHTML=autoOn?'<b>■</b>자동 끄기':'<b>▶</b>자동 승리';};$('bName').onclick=()=>show('name');$('bReset').onclick=()=>show('reset');
 $('bSnd').onclick=()=>{muted=!muted;savePrefs();updSndBtns();};
 $('bMus').onclick=()=>{BGM.on=!BGM.on;savePrefs();if(BGM.on)bgmStart();else bgmStop();updSndBtns();};
@@ -756,21 +751,7 @@ function render(){
  else if(openPanel==='name'){
   h=`<h2>✏️ 닉네임 정하기</h2><div style="font-size:13px;color:#c4cad6">영어, 숫자, 밑줄(_), 한글로 2~16글자</div>
   <input id="nameIn" maxlength="16" value="${P.named?P.name:''}" placeholder="닉네임을 입력하세요" autocomplete="off">
-  <div id="nameErr" style="font-size:13px;color:#ff8a8a;min-height:18px"></div><div class="row"><button class="btn" id="nameOk">저장</button>${P.named?'<button class="btn blue" id="tutAgain">📖 튜토리얼 다시 하기</button><button class="btn" id="codeBtn" style="background:#7048e8;box-shadow:0 4px 0 #4c2fa8">🎁 코드</button>':''}</div>`;
- }
- else if(openPanel==='code'){
-  h=`<h2>🎁 코드 입력</h2><input id="codeIn" maxlength="20" placeholder="코드를 입력하세요" autocomplete="off"><div id="codeErr" style="font-size:13px;color:#ff8a8a;min-height:18px"></div><button class="btn" id="codeOk">확인</button>`;
- }
- else if(openPanel==='dir'){
-  const pb=Object.keys(PETS).map(k=>`<button class="btn small blue" data-dp="${k}"><img src="${thumb(k)}" style="width:22px;height:22px;vertical-align:middle"> ${PETS[k].n}</button>`).join('');
-  h=`<h2>🛠️ 디렉터 도구</h2><div style="font-size:12px;color:#c4cad6;margin-bottom:8px">내 게임에만 효과가 있어요.</div>
-  <div class="dirGrid">
-   <button class="btn small" data-d="w1">🏆 승리 +1,000</button><button class="btn small" data-d="w2">🏆 승리 +10,000</button>
-   <button class="btn small" data-d="s1">📏 다음 구멍까지 작아지기</button><button class="btn small" data-d="s2">📏 마지막 구멍까지 작아지기</button>
-   <button class="btn small" data-d="r1">⭐ 환생 +1</button><button class="btn small" data-d="r10">⭐ 환생 +10</button>
-   <button class="btn small" data-d="r100">⭐ 환생 100</button><button class="btn small" data-d="world">🏜️ 세계 2 바로 열기</button>
-   <button class="btn small" data-d="sp">${DIR.fast?'🐢 빠르게 달리기 끄기':'⚡ 빠르게 달리기 켜기'}</button><button class="btn small" data-d="big" style="background:#868e96;box-shadow:0 4px 0 #495057">📏 처음 크기로</button>
-  </div><h3 style="margin:12px 0 6px">🐾 펫 바로 받기</h3><div class="dirGrid">${pb}</div>`;
+  <div id="nameErr" style="font-size:13px;color:#ff8a8a;min-height:18px"></div><div class="row"><button class="btn" id="nameOk">저장</button>${P.named?'<button class="btn blue" id="tutAgain">📖 튜토리얼 다시 하기</button>':''}</div>`;
  }
  else if(openPanel==='world'){
   const can2=P.w2||P.wins>=W2_NEED;
@@ -791,11 +772,6 @@ function render(){
   const first=!P.tut&&!TUT.on;const old=P.name;P.name=v;P.named=true;scene.remove(me.mesh);me.mesh=makeChar(P.name,...OUTFITS[me.outfit||0],0xf5cd30,true);scene.add(me.mesh);save();hide();
   if(old!==v)chat(`${old}님이 이름을 ${v}(으)로 바꿨어요.`);updateLB();if(first)setTimeout(tutStart,400);};}
  if($('tutAgain'))$('tutAgain').onclick=()=>{hide();tutStart();};
- if($('codeBtn'))$('codeBtn').onclick=()=>show('code');
- if($('codeOk')){setTimeout(()=>{try{$('codeIn').focus();}catch(e){}},50);$('codeOk').onclick=()=>{const v=$('codeIn').value;
-  if(codeHash(v)===DIR_HASH){P.dir=true;save();$('dirBtn').style.display='block';sfx.rb();bigpop('🛠️ 디렉터 도구 열림!','#ff8787');show('dir');}else{$('codeErr').textContent='코드가 맞지 않아요';sfx.no();}};}
- pc.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>dirDo(b.dataset.d));
- pc.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{if(P.pets.length>=MAX_INV){toast('펫 가방이 꽉 찼어요!');return;}const pet={id:P.nextId++,t:b.dataset.dp};P.pets.push(pet);if(P.eq.length<MAX_EQ)P.eq.push(pet.id);rebuildPets();save();toast(`${PETS[pet.t].n} 받았어요!`);});
  const be=$('bestEq');if(be)be.onclick=()=>{P.eq=P.pets.slice().sort((a,b)=>PETS[b.t].m-PETS[a.t].m).slice(0,MAX_EQ).map(p=>p.id);rebuildPets();save();render();};
  pc.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=+b.dataset.del;P.pets=P.pets.filter(p=>p.id!==id);P.eq=P.eq.filter(x=>x!==id);rebuildPets();save();render();});
  pc.querySelectorAll('.pet').forEach(c=>c.onclick=()=>{const id=+c.dataset.id;if(P.eq.includes(id))P.eq=P.eq.filter(x=>x!==id);else{if(P.eq.length>=MAX_EQ){toast('펫은 3마리까지 장착할 수 있어요');return;}P.eq.push(id);}rebuildPets();save();render();});
@@ -817,17 +793,6 @@ function buyEgg(k){
   if(d.r==='신화'||d.r==='전설')chat(`${P.name}님이 ${d.r} 펫 ${d.n}을(를) 얻었어요!`);},1300);
 }
 $('hOk').onclick=()=>{$('hatch').style.display='none';hatch.on=false;};
-const DIR_HASH='1nqzwp8',DIR={fast:false};
-function codeHash(s){let h=2166136261;for(const ch of String(s).normalize('NFC').trim().toLowerCase()){h^=ch.codePointAt(0);h=Math.imul(h,16777619)>>>0;}return h.toString(36);}
-function dirDo(k){if(!P.dir)return;const H=WORLDS[P.world].holes;
- if(k==='w1')P.wins+=1000;if(k==='w2')P.wins+=10000;
- if(k==='s1'){const i=H.findIndex(h=>size()>h);if(i>=0)P.S=Math.max(P.S,Sfor(H[i])*1.001);}
- if(k==='s2')P.S=Math.max(P.S,Sfor(H[15])*1.001);
- if(k==='r1'||k==='r10'||k==='r100'){P.rb=k==='r100'?100:Math.min(100,P.rb+(k==='r1'?1:10));P.S=0;refreshTmSigns();teleportSpawn();}
- if(k==='world'){P.w2=true;goWorld(1);}
- if(k==='sp')DIR.fast=!DIR.fast;
- if(k==='big'){P.S=0;}
- save();sfx.win();if(openPanel==='dir')render();}
 function goWorld(w){
  if(w===1&&!P.w2){if(P.wins<W2_NEED)return;P.wins-=W2_NEED;P.w2=true;sfx.win();chat(`${P.name}님이 세계 2를 열었어요! 🏜️`);}
  P.world=w;buildWorld(w);teleportSpawn();save();hide();
