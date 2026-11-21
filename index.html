@@ -54,6 +54,10 @@ canvas{display:block}
 @media (max-width:640px){#tut{top:104px}#tut .ttext{font-size:14px}}
 #toast{position:fixed;left:50%;top:22%;transform:translateX(-50%);font-size:20px;font-weight:900;text-align:center;text-shadow:0 2px 0 #000,0 0 8px #000;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap}
 .pop{position:fixed;pointer-events:none;font-weight:900;font-size:18px;color:#7dffb0;text-shadow:0 2px 0 #000;animation:up .8s forwards}
+.recpop{position:fixed;left:50%;top:30%;transform:translateX(-50%);pointer-events:none;z-index:25;text-align:center;font-weight:900;font-size:38px;color:#ffe066;text-shadow:0 3px 0 #000,0 0 14px #f59f00;animation:rec 4.5s forwards;white-space:nowrap}
+.recpop small{display:block;font-size:20px;color:#fff}
+@keyframes rec{0%{transform:translate(-50%,20px) scale(.5);opacity:0}10%{transform:translate(-50%,0) scale(1.15);opacity:1}18%{transform:translate(-50%,0) scale(1)}85%{opacity:1}100%{opacity:0}}
+@media (max-width:640px),(max-height:520px){.recpop{font-size:22px}.recpop small{font-size:13px}}
 .bigpop{position:fixed;left:50%;top:38%;transform:translateX(-50%);pointer-events:none;font-weight:900;font-size:40px;color:#ffd84a;text-shadow:0 3px 0 #000,0 0 12px #000;animation:big 1.3s forwards;white-space:nowrap}
 @keyframes up{to{transform:translateY(-60px);opacity:0}}
 @keyframes big{0%{transform:translate(-50%,10px) scale(.6);opacity:0}15%{transform:translate(-50%,0) scale(1.1);opacity:1}75%{opacity:1}100%{transform:translate(-50%,-40px) scale(1);opacity:0}}
@@ -152,7 +156,7 @@ canvas{display:block}
 <div id="prompt"><button id="promptB"></button></div>
 <div id="toast"></div>
 <div id="tut"></div>
-<div id="record">[가장 환생 많이한 기록-100번 : <b>플레이어DDddDDDdDdDd09</b>]</div>
+<div id="record">[가장 환생 많이한 기록-25번 : <b>플레이어DDddDDDdDdDd09</b>]</div>
 <div id="joy"><i id="joyK"></i></div>
 <button id="jump">점프</button>
 <div id="modal"><div id="panel"><button class="x" id="mx">✕</button><div id="pc"></div></div></div>
@@ -223,6 +227,12 @@ const sfx={tap:()=>beep(900+Math.random()*200,.05,'sine',.04,-300),win:()=>{beep
 // ================= UI 공통 =================
 let toastT=0;
 function toast(t,ms=1600){const el=$('toast');el.textContent=t;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,ms);}
+// ===== 환생 최고 기록 =====
+const REC_KEY='shrinkSim_record';let REC={n:'플레이어DDddDDDdDdDd09',r:25};
+try{const d=JSON.parse(localStorage.getItem(REC_KEY)||'null');if(d&&typeof d.n==='string'&&typeof d.r==='number'&&d.r>25&&d.r<=100)REC={n:d.n.replace(/[^A-Za-z0-9_가-힣]/g,'').slice(0,24)||REC.n,r:Math.floor(d.r)};}catch(e){}
+function recShow(){const el=document.getElementById('record');if(el)el.innerHTML=`[가장 환생 많이한 기록-${REC.r}번 : <b>${REC.n}</b>]`;}
+function recCheck(name,rb,live){if(!(rb>REC.r)||rb>100)return;REC={n:name,r:rb};try{localStorage.setItem(REC_KEY,JSON.stringify(REC));}catch(e){}recShow();
+ if(live){const d=document.createElement('div');d.className='recpop';d.innerHTML=`🏆 ${name}님이<br>환생 최고 기록을 세웠어요!<small>환생 ${rb}번</small>`;document.body.appendChild(d);setTimeout(()=>d.remove(),4600);try{sfx.rb();setTimeout(()=>sfx.win(),500);}catch(e){}chat(`🏆 ${name}님이 환생 최고 기록을 세웠어요! (환생 ${rb}번)`);}}
 function bigpop(t,color){const d=document.createElement('div');d.className='bigpop';d.textContent=t;if(color)d.style.color=color;document.body.appendChild(d);setTimeout(()=>d.remove(),1300);}
 function pop(x,y,t){const d=document.createElement('div');d.className='pop';d.style.left=(x-20)+'px';d.style.top=(y-20)+'px';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),800);}
 const chatBox=$('chat');
@@ -582,7 +592,9 @@ function syncPeers(list){const seen=new Set();
   if(Array.isArray(pr.c)&&pr.c.length===2){const ci=Math.floor(num(pr.c[0],-1)),ck=num(pr.c[1]);if(ck!==n.ck&&ci>=0&&ci<QUICK.length){n.ck=ck;bubble(n.mesh,QUICK[ci]);chat(`${name}: ${QUICK[ci]}`,false);}}
   const pe=(Array.isArray(pr.pe)?pr.pe:[]).filter(t=>typeof t==='string'&&Object.prototype.hasOwnProperty.call(PETS,t)).slice(0,3),pk=pe.join(',');
   if(n.pk!==pk){(n.pets||[]).forEach(q=>scene.remove(q.s));n.pets=pe.map((t,ii)=>({s:(()=>{const m=makePetMesh(t);scene.add(m);return m;})(),i:ii,x:n.x,z:n.z}));n.pk=pk;}
-  n.tx=num(pr.x);n.ty=num(pr.y);n.tz=num(pr.z,20);n.tf=num(pr.f);n.S=Math.max(0,num(pr.S));n.rb=Math.max(0,Math.min(100,Math.floor(num(pr.rb))));n.w=pr.w===1?1:0;n.amp=pr.m?1:0;}
+  n.tx=num(pr.x);n.ty=num(pr.y);n.tz=num(pr.z,20);n.tf=num(pr.f);n.S=Math.max(0,num(pr.S));{const prevRb=n.rb;n.rb=Math.max(0,Math.min(100,Math.floor(num(pr.rb))));if(prevRb!==undefined&&n.rb>prevRb)recCheck(name,n.rb,true);else recCheck(name,n.rb,false);}
+  if(Array.isArray(pr.rec)&&pr.rec.length===2){const rn=cleanName(pr.rec[0]),rr=Math.floor(num(pr.rec[1]));if(rn&&rr>REC.r&&rr<=100)recCheck(rn,rr,false);}
+  n.w=pr.w===1?1:0;n.amp=pr.m?1:0;}
  for(const [k,n] of netPeers){if(!seen.has(k)){scene.remove(n.mesh);(n.pets||[]).forEach(q=>scene.remove(q.s));netPeers.delete(k);chat(`${n.name}님이 서버에서 나갔어요.`);}}}
 function updateNet(dt){
  for(const n of netPeers.values()){const k=Math.min(1,10*dt);n.x+=(n.tx-n.x)*k;n.y+=(n.ty-n.y)*k;n.z+=(n.tz-n.z)*k;
@@ -592,7 +604,7 @@ function updateNet(dt){
    const ps=1.15*pv,fl=q.s.userData.fly||q.s.userData.swim;q.s.visible=n.mesh.visible;q.s.position.set(q.x,n.y+(fl?1.3+Math.sin(tm*3+i)*0.2:Math.abs(Math.sin(tm*(n.amp?9:3)+i))*0.25)*ps,q.z);q.s.scale.setScalar(ps);q.s.rotation.y=n.face;animPet(q.s,tm,i);});}
  bubbleTick(me.mesh);
  if(!ROOM||!P.named)return;netT-=dt;if(netT>0)return;netT=0.2;
- ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0,c:myChat.i>=0?[myChat.i,myChat.k]:null,pe:P.eq.map(id=>{const p=P.pets.find(x=>x.id===id);return p?p.t:null;}).filter(Boolean)}).catch(()=>{});}
+ ROOM.presence({j:JOINED,n:P.name,x:Math.round(me.x*1000)/1000,y:Math.round(me.y*1000)/1000,z:Math.round(me.z*1000)/1000,f:Math.round(me.mesh.rotation.y*100)/100,S:P.S,rb:P.rb,w:P.world,m:me.amp?1:0,rec:REC.r>25?[REC.n,REC.r]:null,c:myChat.i>=0?[myChat.i,myChat.k]:null,pe:P.eq.map(id=>{const p=P.pets.find(x=>x.id===id);return p?p.t:null;}).filter(Boolean)}).catch(()=>{});}
 function initNet(){(async()=>{
  // 1) Claude 안에서 열면: Claude 같은 서버 기능
  try{if(window.claude&&typeof window.claude.use==='function'){const r=await window.claude.use('room');if(r){ROOM=r;r.onPeers(ch=>syncPeers(ch.peers),()=>{ROOM=null;});return;}}}catch(e){}
@@ -657,7 +669,7 @@ const SKINS=[0xf5cd30,0xffd8b0,0xe0ac69,0x8d5524,0xc68642,0xf1c27d];
 const ais=[];
 function aiTmIndex(a){let k=0;TMS.forEach((t,i)=>{if(a.rb>=t.r)k=i;});return k;}
 function addAI(name,quiet){
- const rb=Math.random()<.35?Math.floor(rnd(0,4)):Math.random()<.75?Math.floor(rnd(3,20)):Math.floor(rnd(15,60));
+ const rb=Math.min(24,Math.random()<.35?Math.floor(rnd(0,4)):Math.random()<.75?Math.floor(rnd(3,20)):Math.floor(rnd(15,25)));
  const a={name,rb,S:rnd(0,.9)*rbCost(rb),wins:Math.floor(rnd(0,60)*(1+rb*1.5)),pm:rnd(1,1.4+rb*0.08),world:0,state:'toTread',timer:0,x:SPAWN.x+rnd(-3,3),y:0,z:SPAWN.z+rnd(-1,2),face:0,off:rnd(-0.6,0.6),tap:rnd(0.3,1)};
  if(a.wins>=W2_NEED&&Math.random()<.5)a.world=1;
  a.mesh=makeChar(name,pick(SHIRTS),pick([0xa4bd47,0x1c2b4a,0x495057,0x5c3d2e,0x2b8a3e]),pick(SKINS));scene.add(a.mesh);
@@ -672,7 +684,7 @@ function updateAI(a,dt){
  const tm=aiTmIndex(a),tp=TM_POS(tm);
  if(a.state==='toTread'){amp=1;if(moveToward(a,tp.x+a.off,tp.z+a.off,dt,speedFor(v))){a.state='tread';a.timer=rnd(8,35);a.face=Math.PI;}a.S+=0.35*pw*dt;}
  else if(a.state==='tread'){amp=1;a.S+=TMS[tm].m*pw*dt+a.tap*0.15*pw*dt*3;a.timer-=dt;
-  if(a.rb<100&&a.S>=rbCost(a.rb)&&Math.random()<dt*0.2){a.rb++;a.S=0;if(Math.random()<.4)chat(`${a.name}님이 환생했어요! (환생 ${a.rb})`);}
+  if(a.rb<24&&a.S>=rbCost(a.rb)&&Math.random()<dt*0.2){a.rb++;a.S=0;if(Math.random()<.4)chat(`${a.name}님이 환생했어요! (환생 ${a.rb})`);}
   if(a.timer<=0){a.target=aiTarget(a);if(a.target>=0){if(Math.random()<.3)a.target=Math.floor(rnd(0,a.target+1));a.state='toLane';}else a.timer=rnd(5,15);}}
  else if(a.state==='toLane'){amp=1;a.S+=0.35*pw*dt;if(moveToward(a,a.off*0.3,-4,dt,speedFor(v)))a.state='run';}
  else if(a.state==='run'){amp=1;a.S+=0.35*pw*dt;if(moveToward(a,a.off*0.3,PAD_Z(a.target),dt,speedFor(v)))a.state='side';}
@@ -796,7 +808,7 @@ function render(){
 }
 function doRebirth(){
  if(P.rb>=100||P.S<rbCost(P.rb))return;
- P.rb++;P.S=0;teleportSpawn();refreshTmSigns();sfx.rb();bigpop(`⭐ 환생 ${P.rb}!`,'#8dffa8');chat(`${P.name}님이 환생했어요! (환생 ${P.rb})`);save();hide();
+ P.rb++;P.S=0;teleportSpawn();refreshTmSigns();setTimeout(()=>recCheck(P.name,P.rb,true),900);sfx.rb();bigpop(`⭐ 환생 ${P.rb}!`,'#8dffa8');chat(`${P.name}님이 환생했어요! (환생 ${P.rb})`);save();hide();
 }
 function buyEgg(k){
  const E=EGGS[k];if(E.world!==P.world||P.wins<E.price)return;if(P.pets.length>=MAX_INV){toast('펫 가방이 꽉 찼어요!');return;}
@@ -931,6 +943,7 @@ function start(){
  setTimeout(aiChurn,rnd(15000,30000));
  initMini();
  initNet();
+ recShow();recCheck(P.name,P.rb,false);
  if(!P.named)show('name');else if(!P.tut)setTimeout(tutStart,800);
  if(innerWidth<640||(isTouch&&innerHeight<520)){$('lbT').style.display='none';$('lbTog').textContent='▸';}
  updateLB();updateHUD();
